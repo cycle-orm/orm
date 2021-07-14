@@ -12,7 +12,7 @@ final class Source implements SourceInterface
 
     private string $table;
 
-    private ?ConstrainInterface $constrain = null;
+    private ?ScopeInterface $scope = null;
 
     public function __construct(DatabaseInterface $database, string $table)
     {
@@ -30,16 +30,16 @@ final class Source implements SourceInterface
         return $this->table;
     }
 
-    public function withConstrain(?ConstrainInterface $constrain): SourceInterface
+    public function withScope(?ScopeInterface $scope): SourceInterface
     {
         $source = clone $this;
-        $source->constrain = $constrain;
+        $source->scope = $scope;
 
         return $source;
     }
 
-    public function getConstrain(): ?ConstrainInterface
+    public function getScope(): ?ScopeInterface
     {
-        return $this->constrain;
+        return $this->scope;
     }
 }

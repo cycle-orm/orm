@@ -12,7 +12,7 @@ use Cycle\ORM\Relation;
 use Cycle\ORM\Schema;
 use Cycle\ORM\Select;
 use Cycle\ORM\Tests\BaseTest;
-use Cycle\ORM\Tests\Fixtures\SortByIDConstrain;
+use Cycle\ORM\Tests\Fixtures\SortByIDScope;
 use Cycle\ORM\Tests\Traits\TableTrait;
 use Doctrine\Common\Collections\ArrayCollection;
 
@@ -83,7 +83,7 @@ abstract class ClasslessHasManyPromiseTest extends BaseTest
                 Schema::COLUMNS     => ['id', 'user_id', 'message'],
                 Schema::SCHEMA      => [],
                 Schema::RELATIONS   => [],
-                Schema::CONSTRAIN   => SortByIDConstrain::class
+                Schema::SCOPE   => SortByIDScope::class
             ]
         ]));
     }

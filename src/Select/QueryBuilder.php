@@ -126,7 +126,7 @@ final class QueryBuilder
         $loader = $this->findLoader(substr($identifier, 0, $split), $autoload);
         if ($loader !== null) {
             return sprintf(
-                '%s.%s.',
+                '%s.%s',
                 $loader->getAlias(),
                 $loader->fieldAlias(substr($identifier, $split + 1))
             );

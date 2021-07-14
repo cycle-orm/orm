@@ -12,7 +12,7 @@ use Cycle\ORM\Schema;
 use Cycle\ORM\Select;
 use Cycle\ORM\Select\JoinableLoader;
 use Cycle\ORM\Tests\Fixtures\Comment;
-use Cycle\ORM\Tests\Fixtures\SortByIDConstrain;
+use Cycle\ORM\Tests\Fixtures\SortByIDScope;
 use Cycle\ORM\Tests\Fixtures\User;
 use Cycle\ORM\Tests\Traits\TableTrait;
 use Cycle\ORM\Transaction;
@@ -88,7 +88,7 @@ abstract class RelationWithColumnAliasTest extends BaseTest
                 Schema::COLUMNS     => ['id' => 'id_int', 'user_id' => 'user_id_int', 'message' => 'message_str'],
                 Schema::SCHEMA      => [],
                 Schema::RELATIONS   => [],
-                Schema::CONSTRAIN   => SortByIDConstrain::class
+                Schema::SCOPE   => SortByIDScope::class
             ]
         ]));
     }

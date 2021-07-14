@@ -151,7 +151,7 @@ abstract class ManyToManyNonPivotedCollectionTest extends BaseTest
         $selector = new Select($this->orm, User::class);
         $selector->load('tags', [
             'method'    => Select\JoinableLoader::INLOAD,
-            'constrain' => new Select\QueryConstrain([], ['id' => 'ASC'])
+            'scope' => new Select\QueryScope([], ['id' => 'ASC'])
         ])->orderBy(['id' => 'ASC']);
 
         $this->assertSame([

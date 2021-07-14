@@ -13,7 +13,7 @@ use Cycle\ORM\Schema;
 use Cycle\ORM\Select;
 use Cycle\ORM\Select\JoinableLoader;
 use Cycle\ORM\Tests\Fixtures\Comment;
-use Cycle\ORM\Tests\Fixtures\SortByIDConstrain;
+use Cycle\ORM\Tests\Fixtures\SortByIDScope;
 use Cycle\ORM\Tests\Fixtures\User;
 use Cycle\ORM\Tests\Traits\TableTrait;
 
@@ -87,7 +87,7 @@ abstract class HasManyPromiseMapperTest extends BaseTest
                 Schema::COLUMNS     => ['id', 'user_id', 'message'],
                 Schema::SCHEMA      => [],
                 Schema::RELATIONS   => [],
-                Schema::SCOPE       => SortByIDConstrain::class
+                Schema::SCOPE       => SortByIDScope::class
 
             ]
         ]));

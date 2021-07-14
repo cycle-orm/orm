@@ -7,7 +7,7 @@ namespace Cycle\ORM\Tests;
 use Cycle\ORM\Heap\Heap;
 use Cycle\ORM\Schema;
 use Cycle\ORM\Select;
-use Cycle\ORM\Tests\Fixtures\NotDeletedConstrain;
+use Cycle\ORM\Tests\Fixtures\NotDeletedScope;
 use Cycle\ORM\Tests\Fixtures\SoftDeletedMapper;
 use Cycle\ORM\Tests\Fixtures\User;
 use Cycle\ORM\Tests\Traits\TableTrait;
@@ -43,7 +43,7 @@ abstract class SoftDeletesTest extends BaseTest
                 ],
                 Schema::SCHEMA      => [],
                 Schema::RELATIONS   => [],
-                Schema::CONSTRAIN   => NotDeletedConstrain::class
+                Schema::SCOPE   => NotDeletedScope::class
             ]
         ]));
     }
@@ -84,12 +84,12 @@ abstract class SoftDeletesTest extends BaseTest
 
         $orm = $this->orm->withHeap(new Heap());
         $s = new Select($orm, User::class);
-        $s->constrain(new NotDeletedConstrain());
+        $s->scope(new NotDeletedScope());
         $this->assertNull($s->fetchOne());
 
         $orm = $this->orm->withHeap(new Heap());
         $s = new Select($orm, User::class);
-        $s->constrain(null);
+        $s->scope(null);
         $this->assertNotNull($s->fetchOne());
     }
 }

@@ -9,7 +9,7 @@ use Cycle\ORM\Heap\Node;
 use Cycle\ORM\Mapper\Mapper;
 use Cycle\ORM\Schema;
 use Cycle\ORM\Select;
-use Cycle\ORM\Tests\Fixtures\SortByIDConstrain;
+use Cycle\ORM\Tests\Fixtures\SortByIDScope;
 use Cycle\ORM\Tests\Fixtures\User;
 use Cycle\ORM\Tests\Traits\TableTrait;
 use Cycle\ORM\Transaction;
@@ -52,7 +52,7 @@ abstract class TypecastTest extends BaseTest
                 ],
                 Schema::SCHEMA      => [],
                 Schema::RELATIONS   => [],
-                Schema::CONSTRAIN   => SortByIDConstrain::class
+                Schema::SCOPE   => SortByIDScope::class
             ]
         ]));
     }

@@ -200,7 +200,7 @@ abstract class ManyToManyCompositeKeyTest extends BaseTest
         $selector = new Select($this->orm, CompositePK::class);
         $selector->load(self::CHILDREN_CONTAINER, [
             'method'    => Select\JoinableLoader::INLOAD,
-            'constrain' => new Select\QueryConstrain([], ['key1' => 'ASC', 'key2' => 'ASC'])
+            'scope' => new Select\QueryScope([], ['key1' => 'ASC', 'key2' => 'ASC'])
         ])->orderBy(['key3' => 'ASC']);
 
         $this->assertSame(self::PARENTS_FULL, $selector->fetchData());

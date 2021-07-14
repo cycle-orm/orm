@@ -30,7 +30,7 @@ class HasOneLoader extends JoinableLoader
      */
     protected array $options = [
         'load'      => false,
-        'constrain' => true,
+        'scope'     => true,
         'method'    => self::INLOAD,
         'minify'    => true,
         'as'        => null,

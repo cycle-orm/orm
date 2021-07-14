@@ -10,7 +10,7 @@ use Cycle\ORM\Relation;
 use Cycle\ORM\Schema;
 use Cycle\ORM\Select;
 use Cycle\ORM\Tests\BaseTest;
-use Cycle\ORM\Tests\Fixtures\SortByIDConstrain;
+use Cycle\ORM\Tests\Fixtures\SortByIDScope;
 use Cycle\ORM\Tests\Traits\TableTrait;
 use Cycle\ORM\Transaction;
 
@@ -72,7 +72,7 @@ abstract class ClasslessInverseRelationTest extends BaseTest
                         ],
                     ]
                 ],
-                Schema::CONSTRAIN   => SortByIDConstrain::class
+                Schema::SCOPE   => SortByIDScope::class
             ],
             'profile' => [
                 Schema::MAPPER      => StdMapper::class,
@@ -92,7 +92,7 @@ abstract class ClasslessInverseRelationTest extends BaseTest
                         ],
                     ],
                 ],
-                Schema::CONSTRAIN   => SortByIDConstrain::class
+                Schema::SCOPE   => SortByIDScope::class
             ],
         ]));
     }

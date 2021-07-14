@@ -17,7 +17,7 @@ use Cycle\ORM\Schema;
 use Cycle\ORM\Select;
 use Cycle\ORM\Tests\Fixtures\Comment;
 use Cycle\ORM\Tests\Fixtures\Post;
-use Cycle\ORM\Tests\Fixtures\SortByIDConstrain;
+use Cycle\ORM\Tests\Fixtures\SortByIDScope;
 use Cycle\ORM\Tests\Fixtures\User;
 use Cycle\ORM\Tests\Traits\TableTrait;
 use Spiral\Database\Injection\Expression;
@@ -121,7 +121,7 @@ abstract class HasManyNestedConditionTest extends BaseTest
                         ],
                     ]
                 ],
-                Schema::CONSTRAIN   => SortByIDConstrain::class
+                Schema::SCOPE   => SortByIDScope::class
             ],
             Comment::class => [
                 Schema::ROLE        => 'comment',

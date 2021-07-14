@@ -15,7 +15,7 @@ use Cycle\ORM\Mapper\StdMapper;
 use Cycle\ORM\Relation;
 use Cycle\ORM\Schema;
 use Cycle\ORM\Select;
-use Cycle\ORM\Tests\Fixtures\SortByIDConstrain;
+use Cycle\ORM\Tests\Fixtures\SortByIDScope;
 use Cycle\ORM\Tests\Traits\TableTrait;
 
 abstract class ManyToManyPromiseEagerLoadTest extends BaseTest
@@ -118,7 +118,7 @@ abstract class ManyToManyPromiseEagerLoadTest extends BaseTest
                         ],
                     ]
                 ],
-                Schema::CONSTRAIN   => SortByIDConstrain::class
+                Schema::SCOPE   => SortByIDScope::class
             ],
             'version_distribution' => [
                 Schema::ROLE        => 'version_context',
@@ -152,7 +152,7 @@ abstract class ManyToManyPromiseEagerLoadTest extends BaseTest
                         ],
                     ]
                 ],
-                Schema::CONSTRAIN   => SortByIDConstrain::class
+                Schema::SCOPE   => SortByIDScope::class
             ],
             'module'               => [
                 Schema::ROLE        => 'module',
@@ -164,7 +164,7 @@ abstract class ManyToManyPromiseEagerLoadTest extends BaseTest
                 Schema::TYPECAST    => ['id' => 'int'],
                 Schema::SCHEMA      => [],
                 Schema::RELATIONS   => [],
-                Schema::CONSTRAIN   => SortByIDConstrain::class
+                Schema::SCOPE   => SortByIDScope::class
             ]
         ]));
     }

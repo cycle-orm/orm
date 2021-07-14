@@ -8,7 +8,7 @@ use Cycle\ORM\Heap\Heap;
 use Cycle\ORM\Schema;
 use Cycle\ORM\Select;
 use Cycle\ORM\Tests\BaseTest;
-use Cycle\ORM\Tests\Fixtures\NotDeletedConstrain;
+use Cycle\ORM\Tests\Fixtures\NotDeletedScope;
 use Cycle\ORM\Tests\Fixtures\SequenceDefaultValueMapper;
 use Cycle\ORM\Tests\Fixtures\User;
 use Cycle\ORM\Tests\Traits\TableTrait;
@@ -56,7 +56,7 @@ class SequenceDefaultValueTest extends BaseTest
                         ],
                         Schema::SCHEMA => [],
                         Schema::RELATIONS => [],
-                        Schema::CONSTRAIN => NotDeletedConstrain::class
+                        Schema::SCOPE => NotDeletedScope::class
                     ]
                 ]
             )

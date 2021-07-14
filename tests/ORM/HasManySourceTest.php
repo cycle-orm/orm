@@ -9,8 +9,8 @@ use Cycle\ORM\Relation;
 use Cycle\ORM\Schema;
 use Cycle\ORM\Select;
 use Cycle\ORM\Tests\Fixtures\Comment;
-use Cycle\ORM\Tests\Fixtures\LeveledHasManyConstrain;
-use Cycle\ORM\Tests\Fixtures\ShortLeveledHasManyConstrain;
+use Cycle\ORM\Tests\Fixtures\LeveledHasManyScope;
+use Cycle\ORM\Tests\Fixtures\ShortLeveledHasManyScope;
 use Cycle\ORM\Tests\Fixtures\User;
 use Cycle\ORM\Tests\Traits\TableTrait;
 
@@ -103,7 +103,7 @@ abstract class HasManySourceTest extends BaseTest
     public function testSelectUsersWithScope(): void
     {
         $s = new Select($this->orm, User::class);
-        $res = $s->constrain(new Select\QueryConstrain(['@.balance' => 100]))->fetchAll();
+        $res = $s->scope(new Select\QueryScope(['@.balance' => 100]))->fetchAll();
 
         $this->assertCount(1, $res);
         $this->assertSame('hello@world.com', $res[0]->email);
@@ -112,7 +112,7 @@ abstract class HasManySourceTest extends BaseTest
     public function testSelectUserScopeCanNotBeOverwritten(): void
     {
         $s = new Select($this->orm, User::class);
-        $s->constrain(new Select\QueryConstrain(['@.balance' => 100]));
+        $s->scope(new Select\QueryScope(['@.balance' => 100]));
 
         $res = $s->where('user.balance', 200)->fetchAll();
 
@@ -122,7 +122,7 @@ abstract class HasManySourceTest extends BaseTest
     public function testSelectUserScopeCanNotBeOverwritten2(): void
     {
         $s = new Select($this->orm, User::class);
-        $s->constrain(new Select\QueryConstrain(['@.balance' => 100]));
+        $s->scope(new Select\QueryScope(['@.balance' => 100]));
 
         $res = $s->orWhere('user.balance', 200)->fetchAll();
 
@@ -132,7 +132,7 @@ abstract class HasManySourceTest extends BaseTest
     public function testScopeWithOrderBy(): void
     {
         $s = new Select($this->orm, User::class);
-        $s->constrain(new Select\QueryConstrain([], ['@.balance' => 'DESC']));
+        $s->scope(new Select\QueryScope([], ['@.balance' => 'DESC']));
 
         $res = $s->fetchAll();
 
@@ -144,7 +144,7 @@ abstract class HasManySourceTest extends BaseTest
     public function testRelated(): void
     {
         $s = new Select($this->orm, User::class);
-        $s->constrain(new Select\QueryConstrain([], ['@.balance' => 'DESC']));
+        $s->scope(new Select\QueryScope([], ['@.balance' => 'DESC']));
 
         $res = $s->load('comments')->fetchAll();
 
@@ -168,10 +168,10 @@ abstract class HasManySourceTest extends BaseTest
     public function testRelatedScope(): void
     {
         $s = new Select($this->orm, User::class);
-        $s->constrain(new Select\QueryConstrain([], ['@.balance' => 'DESC']));
+        $s->scope(new Select\QueryScope([], ['@.balance' => 'DESC']));
 
         $res = $s->load('comments', [
-            'constrain' => new Select\QueryConstrain(['@.level' => 4])
+            'scope' => new Select\QueryScope(['@.level' => 4])
         ])->fetchAll();
 
         [$b, $a] = $res;
@@ -185,11 +185,11 @@ abstract class HasManySourceTest extends BaseTest
     public function testRelatedScopeInload(): void
     {
         $s = new Select($this->orm, User::class);
-        $s->constrain(new Select\QueryConstrain([], ['@.balance' => 'DESC']));
+        $s->scope(new Select\QueryScope([], ['@.balance' => 'DESC']));
 
         $res = $s->load('comments', [
             'method'    => Select\JoinableLoader::INLOAD,
-            'constrain' => new Select\QueryConstrain(['@.level' => 4])
+            'scope' => new Select\QueryScope(['@.level' => 4])
         ])->fetchAll();
 
         [$b, $a] = $res;
@@ -203,10 +203,10 @@ abstract class HasManySourceTest extends BaseTest
     public function testRelatedScopeOrdered(): void
     {
         $s = new Select($this->orm, User::class);
-        $s->constrain(new Select\QueryConstrain([], ['@.balance' => 'DESC']));
+        $s->scope(new Select\QueryScope([], ['@.balance' => 'DESC']));
 
         $res = $s->load('comments', [
-            'constrain' => new Select\QueryConstrain(['@.level' => ['>=' => 3]], ['@.level' => 'DESC'])
+            'scope' => new Select\QueryScope(['@.level' => ['>=' => 3]], ['@.level' => 'DESC'])
         ])->fetchAll();
 
         [$b, $a] = $res;
@@ -223,11 +223,11 @@ abstract class HasManySourceTest extends BaseTest
     public function testRelatedScopeOrderedInload(): void
     {
         $s = new Select($this->orm, User::class);
-        $s->constrain(new Select\QueryConstrain([], ['@.balance' => 'DESC']));
+        $s->scope(new Select\QueryScope([], ['@.balance' => 'DESC']));
 
         $res = $s->load('comments', [
             'method'    => Select\JoinableLoader::INLOAD,
-            'constrain' => new Select\QueryConstrain(['@.level' => ['>=' => 3]], ['@.level' => 'DESC'])
+            'scope' => new Select\QueryScope(['@.level' => ['>=' => 3]], ['@.level' => 'DESC'])
         ])->fetchAll();
 
         [$b, $a] = $res;
@@ -272,12 +272,12 @@ abstract class HasManySourceTest extends BaseTest
                 Schema::COLUMNS     => ['id', 'user_id', 'level', 'message'],
                 Schema::SCHEMA      => [],
                 Schema::RELATIONS   => [],
-                Schema::CONSTRAIN   => LeveledHasManyConstrain::class
+                Schema::SCOPE   => LeveledHasManyScope::class
             ]
         ]));
 
         $s = new Select($this->orm, User::class);
-        $s->constrain(new Select\QueryConstrain([], ['@.balance' => 'DESC']));
+        $s->scope(new Select\QueryScope([], ['@.balance' => 'DESC']));
 
         $res = $s->load('comments')->fetchAll();
 
@@ -323,12 +323,12 @@ abstract class HasManySourceTest extends BaseTest
                 Schema::COLUMNS     => ['id', 'user_id', 'level', 'message'],
                 Schema::SCHEMA      => [],
                 Schema::RELATIONS   => [],
-                Schema::CONSTRAIN   => LeveledHasManyConstrain::class
+                Schema::SCOPE   => LeveledHasManyScope::class
             ]
         ]));
 
         $s = new Select($this->orm, User::class);
-        $s->constrain(new Select\QueryConstrain([], ['@.balance' => 'DESC']));
+        $s->scope(new Select\QueryScope([], ['@.balance' => 'DESC']));
 
         $res = $s->load('comments', [
             'method' => Select\JoinableLoader::INLOAD,
@@ -377,12 +377,12 @@ abstract class HasManySourceTest extends BaseTest
                 Schema::COLUMNS     => ['id', 'user_id', 'level', 'message'],
                 Schema::SCHEMA      => [],
                 Schema::RELATIONS   => [],
-                Schema::CONSTRAIN   => LeveledHasManyConstrain::class
+                Schema::SCOPE   => LeveledHasManyScope::class
             ]
         ]));
 
         $s = new Select($this->orm, User::class);
-        $s->constrain(new Select\QueryConstrain([], ['@.balance' => 'DESC']));
+        $s->scope(new Select\QueryScope([], ['@.balance' => 'DESC']));
 
         $res = $s->fetchAll();
 
@@ -429,12 +429,12 @@ abstract class HasManySourceTest extends BaseTest
                 Schema::COLUMNS     => ['id', 'user_id', 'level', 'message'],
                 Schema::SCHEMA      => [],
                 Schema::RELATIONS   => [],
-                Schema::CONSTRAIN   => ShortLeveledHasManyConstrain::class
+                Schema::SCOPE   => ShortLeveledHasManyScope::class
             ]
         ]));
 
         $s = new Select($this->orm, User::class);
-        $s->constrain(new Select\QueryConstrain([], ['@.balance' => 'DESC']));
+        $s->scope(new Select\QueryScope([], ['@.balance' => 'DESC']));
 
         $res = $s->fetchAll();
 

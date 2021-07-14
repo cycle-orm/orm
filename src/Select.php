@@ -6,7 +6,7 @@ namespace Cycle\ORM;
 
 use Countable;
 use Cycle\ORM\Heap\Node;
-use Cycle\ORM\Select\ConstrainInterface;
+use Cycle\ORM\Select\ScopeInterface;
 use Cycle\ORM\Select\JoinableLoader;
 use Cycle\ORM\Select\QueryBuilder;
 use Cycle\ORM\Select\RootLoader;
@@ -101,11 +101,11 @@ final class Select implements IteratorAggregate, Countable, PaginableInterface
     }
 
     /**
-     * Create new Selector with applied scope. By default no constrain used.
+     * Create new Selector with applied scope. By default no scope used.
      */
-    public function constrain(ConstrainInterface $constrain = null): self
+    public function scope(ScopeInterface $scope = null): self
     {
-        $this->loader->setConstrain($constrain);
+        $this->loader->setScope($scope);
 
         return $this;
     }
@@ -368,9 +368,7 @@ final class Select implements IteratorAggregate, Countable, PaginableInterface
     }
 
     /**
-     * Find one entity or return null. Method provides the ability to configure custom query
-     * parameters. Attention, method does not set a limit on selection (to avoid underselection of
-     * joined tables), make sure to set the constrain in the query.
+     * Find one entity or return null. Method provides the ability to configure custom query parameters.
      */
     public function fetchOne(array $query = null): ?object
     {

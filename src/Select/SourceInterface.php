@@ -22,12 +22,12 @@ interface SourceInterface
     public function getTable(): string;
 
     /**
-     * Associate query constrain (or remove association).
+     * Associate query scope (or remove association).
      */
-    public function withConstrain(?ConstrainInterface $constrain): SourceInterface;
+    public function withScope(?ScopeInterface $scope): SourceInterface;
 
     /**
-     * Return associated query constrain.
+     * Return associated query scope.
      */
-    public function getConstrain(): ?ConstrainInterface;
+    public function getScope(): ?ScopeInterface;
 }

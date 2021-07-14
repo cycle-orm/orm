@@ -29,7 +29,7 @@ class ManyToManyLoader extends JoinableLoader
      */
     protected array $options = [
         'load'      => false,
-        'constrain' => true,
+        'scope'     => true,
         'method'    => self::POSTLOAD,
         'minify'    => true,
         'as'        => null,
