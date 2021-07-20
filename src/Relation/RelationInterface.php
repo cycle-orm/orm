@@ -35,7 +35,10 @@ interface RelationInterface
      */
     public function isCascade(): bool;
 
-    public function prepare(Pool $pool, Tuple $tuple, bool $load = true): void;
+    /**
+     * @param mixed $entityData
+     */
+    public function prepare(Pool $pool, Tuple $tuple, $entityData, bool $load = true): void;
 
     public function queue(Pool $pool, Tuple $tuple): void;
 }

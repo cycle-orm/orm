@@ -265,19 +265,6 @@ final class ORM implements ORMInterface
     public function getRelationMap(string $entity): RelationMap
     {
         $role = $this->resolveRole($entity);
-        if (isset($this->relMaps[$role])) {
-            return $this->relMaps[$role];
-        }
-
-        $outerRelations = $this->schema->getOuterRelations($role);
-        $innerRelations = $this->schema->getInnerRelations($role);
-        $relations = [];
-
-        foreach ($innerRelations as $relName => $relSchema) {
-            $relations[$relName] = $this->factory->relation($this, $this->schema, $role, $relName);
-        }
-        $map = new RelationMap($relations, $outerRelations);
-        $this->relMaps[$role] = $map;
-        return $map;
+        return $this->relMaps[$role] ?? ($this->relMaps[$role] = RelationMap::build($this, $role));
     }
 }

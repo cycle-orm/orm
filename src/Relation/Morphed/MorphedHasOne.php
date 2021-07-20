@@ -57,7 +57,7 @@ class MorphedHasOne extends HasOne
 
             if (($nodeData[$this->morphKey] ?? null) !== $node->getRole()) {
                 // $rStore->register($this->morphKey, $node->getRole(), true);
-                $rNode->register($this->morphKey, $node->getRole(), true);
+                $rNode->register($this->morphKey, $node->getRole());
             }
         }
 

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Cycle\ORM\Heap;
 
 use Cycle\ORM\Context\ConsumerInterface;
-use Cycle\ORM\Context\ProducerInterface;
 use Cycle\ORM\Heap\Traits\WaitFieldTrait;
 use Cycle\ORM\Heap\Traits\RelationTrait;
 use JetBrains\PhpStorm\ExpectedValues;
@@ -13,7 +12,7 @@ use JetBrains\PhpStorm\ExpectedValues;
 /**
  * Current node state.
  */
-final class State implements ConsumerInterface, ProducerInterface
+final class State implements ConsumerInterface
 {
     use RelationTrait;
     use WaitFieldTrait;
@@ -23,12 +22,10 @@ final class State implements ConsumerInterface, ProducerInterface
     /** @var array<string, mixed> */
     private array $data;
 
-    /** @var array<string, mixed> */
-
     private array $transactionData;
 
-    /** @var ConsumerInterface[] */
-    private array $consumers = [];
+    /** @var array<string, Node[]> */
+    private array $storage = [];
 
     public function __construct(
         #[ExpectedValues(valuesFromClass: Node::class)]
@@ -38,6 +35,36 @@ final class State implements ConsumerInterface, ProducerInterface
         $this->state = $state;
         $this->data = $data;
         $this->transactionData = $state === Node::NEW ? [] : $data;
+    }
+
+    /**
+     * Storage to store temporary cross entity links.
+     *
+     * @return iterable<int, Node>
+     *
+     * @internal
+     */
+    public function getStorage(string $type): iterable
+    {
+        if (!isset($this->storage[$type])) {
+            return $this->storage[$type] = [];
+        }
+
+        return $this->storage[$type];
+    }
+
+    public function addToStorage(string $type, Node $node): void
+    {
+        $this->storage[$type][] = $node;
+    }
+
+    public function clearStorage(string $type = null): void
+    {
+        if ($type === null) {
+            $this->storage = [];
+        } else {
+            unset($this->storage[$type]);
+        }
     }
 
     /**
@@ -97,30 +124,10 @@ final class State implements ConsumerInterface, ProducerInterface
         return array_udiff_assoc($this->data, $this->transactionData, [Node::class, 'compare']);
     }
 
-    public function forward(
-        string $key,
-        ConsumerInterface $consumer,
-        string $target,
-        bool $trigger = false,
-        int $stream = ConsumerInterface::DATA
-    ): void {
-        $this->consumers[$key][] = [$consumer, $target, $stream];
-
-        \Cycle\ORM\Transaction\Pool::DEBUG AND print sprintf(
-            "Forward to State! [%s]  target: $target, key: $key, value: %s Stream: %s\n",
-            $consumer instanceof Node ? 'Node ' . $consumer->getRole() : get_class($consumer),
-            (string)($this->getValue($key) ?? 'NULL'),
-            [ConsumerInterface::DATA => 'DATA', ConsumerInterface::SCOPE => 'SCOPE'][$stream]
-        );
-        if ($trigger || !empty($this->getValue($key))) {
-            $this->register($key, $this->getValue($key), false, $stream);
-        }
-    }
-
     /**
      * @return null|mixed
      */
-    public function getValue(string $key)
+    public function getValue(string $key): mixed
     {
         return array_key_exists($key, $this->data) ? $this->data[$key] : ($this->transactionData[$key] ?? null);
     }
@@ -135,38 +142,18 @@ final class State implements ConsumerInterface, ProducerInterface
 
     public function register(
         string $key,
-        $value,
-        bool $fresh = false,
+        mixed $value,
         int $stream = self::DATA
     ): void {
-        $oldValue = $this->getValue($key);
-
-        if (!$fresh && !is_object($oldValue)) {
-            // custom, non value objects can be supported here
-            $fresh = $oldValue != $value;
-        }
-        if ($fresh || $value !== null) {
-            $this->freeWaitingField($key);
-        }
+        $this->freeWaitingField($key);
 
         \Cycle\ORM\Transaction\Pool::DEBUG and print sprintf(
-            "State(%s):Register %s {$key} => %s\n",
+            "State(%s):Register {$key} => %s\n",
             spl_object_id($this),
-            $fresh ? 'fresh' : '',
             var_export($value, true)
         );
 
         $this->data[$key] = $value;
-
-        // cascade
-        if (!empty($this->consumers[$key])) {
-            foreach ($this->consumers[$key] as $consumer) {
-                /** @var ConsumerInterface $acc */
-                $acc = $consumer[0];
-                $acc->register($consumer[1], $value, $fresh, $consumer[2]);
-                $fresh = false;
-            }
-        }
     }
 
     public function isReady(): bool
@@ -176,6 +163,6 @@ final class State implements ConsumerInterface, ProducerInterface
 
     public function __destruct()
     {
-        unset($this->consumers, $this->relations);
+        unset($this->relations, $this->storage);
     }
 }

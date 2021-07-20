@@ -283,20 +283,12 @@ abstract class ClasslessCyclicReferencesTest extends BaseTest
         $u2->favorites->add($c2);
 
         $this->captureWriteQueries();
-
-        $tr = new Transaction($this->orm);
-        $tr->persist($u);
-        $tr->persist($u2);
-        $tr->run();
-
+        $this->save($u, $u2);
         $this->assertNumWrites(10);
 
         // no changes!
         $this->captureWriteQueries();
-        $tr = new Transaction($this->orm);
-        $tr->persist($u);
-        $tr->persist($u2);
-        $tr->run();
+        $this->save($u, $u2);
         $this->assertNumWrites(0);
     }
 }

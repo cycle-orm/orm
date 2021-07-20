@@ -115,7 +115,7 @@ final class Embedded implements SameRowRelationInterface
         return $scope;
     }
 
-    public function prepare(Pool $pool, Tuple $tuple, bool $load = true): void
+    public function prepare(Pool $pool, Tuple $tuple, $entityData, bool $load = true): void
     {
     }
 

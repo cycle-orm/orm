@@ -49,11 +49,13 @@ class BelongsTo extends AbstractRelation implements DependencyInterface
     /**
      * todo: deduplicate with {@see \Cycle\ORM\Relation\RefersTo::prepare()}
      */
-    public function prepare(Pool $pool, Tuple $tuple, bool $load = true): void
+    public function prepare(Pool $pool, Tuple $tuple, $entityData, bool $load = true): void
     {
         $node = $tuple->node;
         $original = $node->getRelation($this->getName());
         $related = $tuple->state->getRelation($this->getName());
+        $related = $entityData;
+        $tuple->state->setRelation($this->getName(), $related);
 
         if ($related === null) {
             if (!$this->isNullable()) {
@@ -76,7 +78,7 @@ class BelongsTo extends AbstractRelation implements DependencyInterface
                 // reset keys
                 $state = $node->getState();
                 foreach ($this->innerKeys as $innerKey) {
-                    $state->register($innerKey, null, true);
+                    $state->register($innerKey, null);
                 }
             }
             $node->setRelationStatus($this->getName(), RelationInterface::STATUS_RESOLVED);

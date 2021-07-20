@@ -75,7 +75,7 @@ class UpdateCommandTest extends TestCase
             $state
         );
 
-        $cmd->register('key', 'value', false, ConsumerInterface::SCOPE);
+        $cmd->register('key', 'value', ConsumerInterface::SCOPE);
         $this->assertSame(['key' => 'value'], $cmd->getScope());
     }
 

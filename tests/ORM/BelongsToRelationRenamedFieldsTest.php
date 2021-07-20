@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace Cycle\ORM\Tests;
 
-use Cycle\ORM\Heap\Heap;
 use Cycle\ORM\Mapper\Mapper;
 use Cycle\ORM\Relation;
 use Cycle\ORM\Schema;
-use Cycle\ORM\Select;
 use Cycle\ORM\Tests\Fixtures\Nested;
 use Cycle\ORM\Tests\Fixtures\Profile;
 use Cycle\ORM\Tests\Fixtures\User;
@@ -64,10 +62,10 @@ abstract class BelongsToRelationRenamedFieldsTest extends BelongsToRelationTest
         $this->makeFK('profile', 'user_id_field', 'user', 'user_pk');
         $this->makeFK('nested', 'profile_id_field', 'profile', 'profile_pk');
 
-        $this->orm = $this->withSchema(new Schema($this->getSchemaDefinition()));
+        $this->orm = $this->withSchema(new Schema($this->getSchemaArray()));
     }
 
-    private function getSchemaDefinition(): array
+    private function getSchemaArray(): array
     {
         return [
             User::class    => [
@@ -121,39 +119,5 @@ abstract class BelongsToRelationRenamedFieldsTest extends BelongsToRelationTest
                 ]
             ]
         ];
-    }
-
-    public function testSetNull(): void
-    {
-        $schema = $this->getSchemaDefinition();
-        $schema[Profile::class][Schema::RELATIONS]['user'][Relation::SCHEMA][Relation::NULLABLE] = true;
-        $this->orm = $this->withSchema(new Schema($schema));
-
-        $this->makeTable('profile', [
-            'profile_pk'    => 'primary',
-            'user_id_field' => 'integer,nullable',
-            'image'         => 'string'
-        ]);
-
-
-        /** @var Profile $p */
-        $p = (new Select($this->orm, Profile::class))->wherePK(1)->load('user')->fetchOne();
-        $p->user = null;
-
-        var_dump('prepare');
-        $this->captureWriteQueries();
-        $this->save($p);
-        $this->assertNumWrites(1);
-
-        // consecutive
-        $this->captureWriteQueries();
-        $this->save($p);
-        $this->assertNumWrites(0);
-
-        /** @var Profile $p */
-        $p = (new Select($this->orm->withHeap(new Heap()), Profile::class))
-            ->wherePK(1)->load('user')->fetchOne();
-
-        $this->assertSame(null, $p->user);
     }
 }

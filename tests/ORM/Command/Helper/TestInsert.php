@@ -7,11 +7,9 @@ namespace Cycle\ORM\Tests\Command\Helper;
 use Cycle\ORM\Command\DatabaseCommand;
 use Cycle\ORM\Command\Traits\ErrorTrait;
 use Cycle\ORM\Context\ConsumerInterface;
-use Cycle\ORM\Context\ProducerInterface;
-use Cycle\ORM\Exception\CommandException;
 use Spiral\Database\DatabaseInterface;
 
-class TestInsert extends DatabaseCommand implements ProducerInterface, ConsumerInterface
+class TestInsert extends DatabaseCommand implements ConsumerInterface
 {
     use ErrorTrait;
 
@@ -43,26 +41,7 @@ class TestInsert extends DatabaseCommand implements ProducerInterface, ConsumerI
         return true;
     }
 
-    /**
-     * @inheritdoc
-     *
-     * Triggers only after command execution!
-     */
-    public function forward(
-        string $key,
-        ConsumerInterface $consumer,
-        string $target,
-        bool $trigger = false,
-        int $stream = ConsumerInterface::DATA
-    ): void {
-        if ($trigger) {
-            throw new CommandException('Insert command can only forward keys after the execution');
-        }
-
-        $this->consumers[$key][] = [$consumer, $target, $stream];
-    }
-
-    public function register(string $key, $value, bool $fresh = false, int $stream = self::DATA): void
+    public function register(string $key, mixed $value, int $stream = self::DATA): void
     {
     }
 
@@ -81,7 +60,6 @@ class TestInsert extends DatabaseCommand implements ProducerInterface, ConsumerI
      */
     public function execute(): void
     {
-        $update = true;
         $data = $this->getData();
         $insertID = $this->db->insert($this->table)->values($data)->run();
 
@@ -96,8 +74,7 @@ class TestInsert extends DatabaseCommand implements ProducerInterface, ConsumerI
                     $value = $data[$key] ?? null;
                 }
 
-                $cn->register($consumer[1], $value, $update, $consumer[2]);
-                $update = false;
+                $cn->register($consumer[1], $value, $consumer[2]);
             }
         }
 

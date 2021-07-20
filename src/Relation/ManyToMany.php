@@ -46,7 +46,7 @@ class ManyToMany extends Relation\AbstractRelation
         $this->throughOuterKeys = (array)$this->schema[Relation::THROUGH_OUTER_KEY];
     }
 
-    public function prepare(Pool $pool, Tuple $tuple, bool $load = true): void
+    public function prepare(Pool $pool, Tuple $tuple, $entityData, bool $load = true): void
     {
         $node = $tuple->node;
 
@@ -54,7 +54,9 @@ class ManyToMany extends Relation\AbstractRelation
         $original = $node->getRelation($this->getName());
 
         /** @var iterable|ReferenceInterface|PivotedCollectionInterface $related */
-        $related = $tuple->state->getRelation($this->getName());
+        // $related = $tuple->state->getRelation($this->getName());
+        $related = $entityData;
+        $tuple->state->setRelation($this->getName(), $related);
 
         if ($original instanceof ReferenceInterface) {
             if (!$load && $related === $original && !$original->hasValue()) {
@@ -65,9 +67,7 @@ class ManyToMany extends Relation\AbstractRelation
             $original = $original->getValue();
             $node->setRelation($this->getName(), $original);
         }
-        if (!$original instanceof PivotedStorage) {
-            $original = $this->extract($original);
-        }
+        $original = $this->extract($original);
 
         if ($related instanceof ReferenceInterface && $this->resolve($related, true) !== null) {
             $related = $related->getValue();
@@ -86,7 +86,7 @@ class ManyToMany extends Relation\AbstractRelation
             }
         }
 
-        if (count($related) === 0) {
+        if ($this->mirrorRelation === null && count($related) === 0) {
             // $node->setRelation($this->getName(), $related);
             $node->setRelationStatus($this->getName(), RelationInterface::STATUS_RESOLVED);
             return;
@@ -97,31 +97,33 @@ class ManyToMany extends Relation\AbstractRelation
         foreach ($related->getElements() as $item) {
             $this->newLink($pool, $tuple, $related, $item);
         }
-
     }
 
     public function queue(Pool $pool, Tuple $tuple): void
     {
-        // $related = $tuple->state->getStorage($this->pivotEntity);
         $related = $tuple->state->getRelation($this->getName());
-        // $related = $this->extract($relatedSource);
 
         $node = $tuple->node;
         $node->setRelationStatus($this->getName(), RelationInterface::STATUS_RESOLVED);
-        // $original = $node->getRelation($this->getName()) ?? new PivotedStorage();
-        // $original ??= new Pivoted\PivotedStorage();
 
         if ($related instanceof ReferenceInterface && !$related->hasValue()) {
             return;
         }
 
-        $relationName = $this->getTargetRelationName();
+        // $relationName = $this->getTargetRelationName();
+        $relationName = $tuple->node->getRole() . '.' . $this->name . ':' . $this->pivotEntity;
         foreach ($related as $item) {
             $pivot = $related->get($item);
             if ($pivot !== null) {
                 $pTuple = $pool->offsetGet($pivot);
-                $this->applyPivotChanges($tuple, $pTuple);
+                $this->applyPivotChanges($node, $pTuple->node);
                 $pTuple->node->setRelationStatus($relationName, RelationInterface::STATUS_RESOLVED);
+            }
+        }
+        if ($this->mirrorRelation !== null) {
+            foreach ($tuple->state->getStorage($this->name) as $pNode) {
+                $this->applyPivotChanges($node, $pNode);
+                $pNode->setRelationStatus($relationName, RelationInterface::STATUS_RESOLVED);
             }
         }
     }
@@ -157,25 +159,16 @@ class ManyToMany extends Relation\AbstractRelation
 
     public function extract(?iterable $data): PivotedStorage
     {
-        if ($data instanceof PivotedStorage) {
-            return $data;
-        }
-
-        if ($data instanceof PivotedCollectionInterface) {
-            return new PivotedStorage($data->toArray(), $data->getPivotContext());
-        }
-
-        if ($data instanceof Collection) {
-            return new PivotedStorage($data->toArray());
-        }
-
-        if ($data === null) {
-            return new PivotedStorage();
-        }
-
-        return $data instanceof Traversable
-            ? new PivotedStorage(iterator_to_array($data))
-            : new PivotedStorage((array)$data);
+        return match(true) {
+            $data instanceof PivotedStorage => $data,
+            $data instanceof PivotedCollectionInterface => new PivotedStorage(
+                $data->toArray(), $data->getPivotContext()
+            ),
+            $data instanceof Collection => new PivotedStorage($data->toArray()),
+            $data === null => new PivotedStorage(),
+            $data instanceof Traversable => new PivotedStorage(iterator_to_array($data)),
+            default => new PivotedStorage((array)$data),
+        };
     }
 
     public function extractRelated(?iterable $data, PivotedStorage $original): PivotedStorage
@@ -284,10 +277,10 @@ class ManyToMany extends Relation\AbstractRelation
         return $result;
     }
 
-    protected function applyPivotChanges(Tuple $parentTuple, Tuple $tuple): void
+    protected function applyPivotChanges(Node $parentNode, Node $node): void
     {
         foreach ($this->innerKeys as $i => $innerKey) {
-            $tuple->node->register($this->throughInnerKeys[$i], $parentTuple->state->getValue($innerKey));
+            $node->register($this->throughInnerKeys[$i], $parentNode->getState()->getValue($innerKey));
         }
     }
 
@@ -314,16 +307,26 @@ class ManyToMany extends Relation\AbstractRelation
         }
 
         $pNode = $this->getNode($pivot);
-        $pRelationName = $tuple->node->getRole() . ':' . $this->getName();
-        // $pNode->setRelation($pRelationName, $tuple->state->getTransactionData());
-        $pNode->setRelationStatus($pRelationName, RelationInterface::STATUS_RESOLVED);
+        // $pRelationName = $tuple->node->getRole() . '.' . $this->getName() . ':' . $this->pivotEntity;
+        // $pNode->setRelationStatus($pRelationName, RelationInterface::STATUS_RESOLVED);
 
         $pState = $pNode->getState();
         $rState = $rNode->getState();
         foreach ($this->throughInnerKeys as $i => $pInnerKey) {
-            $pState->register($pInnerKey, $tuple->node->getState()->getTransactionData()[$this->innerKeys[$i]] ?? null, true);
+            $pState->register($pInnerKey, $tuple->node->getState()->getTransactionData()[$this->innerKeys[$i]] ?? null);
 
-            $rState->forward($this->outerKeys[$i], $pState, $this->throughOuterKeys[$i]);
+            // $rState->forward($this->outerKeys[$i], $pState, $this->throughOuterKeys[$i]);
+        }
+
+        if ($this->mirrorRelation === null) {
+            // send the Pivot into child's State for the ShadowHasMany relation
+            // $relName = $tuple->node->getRole() . '.' . $this->name . ':' . $this->target;
+            $relName = $this->getTargetRelationName();
+            $pivots = $rNode->getState()->getRelations()[$relName] ?? [];
+            $pivots[] = $pivot;
+            $rNode->getState()->setRelation($relName, $pivots);
+        } else {
+            $rState->addToStorage($this->mirrorRelation, $pNode);
         }
 
         $pool->attachStore($related, $this->isCascade(), $rNode, $rState);

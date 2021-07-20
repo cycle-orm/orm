@@ -11,6 +11,7 @@ use Cycle\ORM\Relation\ManyToMany;
 use Cycle\ORM\Relation\RelationInterface;
 use Cycle\ORM\Relation\SameRowRelationInterface;
 use Cycle\ORM\Relation\ShadowBelongsTo;
+use Cycle\ORM\Relation\ShadowHasMany;
 use JetBrains\PhpStorm\ExpectedValues;
 
 use function count;
@@ -30,7 +31,7 @@ final class RelationMap
     /** @var SameRowRelationInterface[] */
     private array $embedded = [];
 
-    public function __construct(array $innerRelations, array $outerRelations)
+    private function __construct(array $innerRelations, array $outerRelations)
     {
         $this->innerRelations = $innerRelations;
 
@@ -43,12 +44,29 @@ final class RelationMap
                 $this->slaves[$name] = $relation;
             }
         }
+    }
+
+    public static function build(OrmInterface $orm, string $role): self
+    {
+        $factory = $orm->getFactory();
+        $ormSchema = $orm->getSchema();
+
+        $outerRelations = $ormSchema->getOuterRelations($role);
+        $innerRelations = $ormSchema->getInnerRelations($role);
+
+        // Build relations
+        $relations = [];
+        foreach ($innerRelations as $relName => $relSchema) {
+            $relations[$relName] = $factory->relation($orm, $ormSchema, $role, $relName);
+        }
+        $result = new self($relations, $outerRelations);
 
         foreach ($outerRelations as $outerRole => $relations) {
             foreach ($relations as $container => $relationSchema) {
-                $this->registerOuterRelation($outerRole, $container, $relationSchema);
+                $result->registerOuterRelation($outerRole, $container, $relationSchema);
             }
         }
+        return $result;
     }
 
     private function registerOuterRelation(string $role, string $container, array $relationSchema): void
@@ -60,43 +78,28 @@ final class RelationMap
             return;
         }
         if ($relationType === Relation::MANY_TO_MANY) {
-            // $schema = $relationSchema[Relation::SCHEMA];
-            // $through = $this->schema->resolveAlias($schema[Relation::THROUGH_ENTITY]);
-            # todo: SHADOW_HAS_MANY
-            foreach ($this->slaves as $name => $relation) {
-                if (!$relation instanceof ManyToMany || $relation->getTarget() !== $role) {
-                    continue;
-                }
-                $schema = $relation->getSchema();
-                // Pivot entity should be same
-                if ($relationSchema[Relation::SCHEMA][Relation::THROUGH_ENTITY] !== $schema[Relation::THROUGH_ENTITY]) {
-                    continue;
-                }
-                // Same keys
-                if ((array)$relationSchema[Relation::SCHEMA][Relation::INNER_KEY] !== (array)$schema[Relation::OUTER_KEY]
-                    || (array)$relationSchema[Relation::SCHEMA][Relation::OUTER_KEY] !== (array)$schema[Relation::INNER_KEY]) {
-                    continue;
-                }
-                if ($relation->getHandshake() === null) {
-                    $relation->setHandshake($container);
-                }
+            $handshaked = is_string($relationSchema[Relation::SCHEMA][Relation::HANDSHAKE] ?? null);
+            // Create ShadowHasMany
+            if (!$handshaked) {
+                $relation = new ShadowHasMany(
+                    $relationSchema[Relation::TARGET],
+                    $role . '.' . $container . ':' . $relationSchema[Relation::TARGET],
+                    $relationSchema[Relation::SCHEMA][Relation::THROUGH_ENTITY],
+                    (array)$relationSchema[Relation::SCHEMA][Relation::OUTER_KEY],
+                    (array)$relationSchema[Relation::SCHEMA][Relation::THROUGH_OUTER_KEY]
+                );
+                $this->slaves[$relation->getName()] = $relation;
             }
             return;
         }
         if ($relationType === Relation::MORPHED_HAS_ONE || $relationType === Relation::MORPHED_HAS_MANY) {
             // todo: find morphed collisions, decide handshake
-            $relation = new ShadowBelongsTo('~morphed~', $container, $relationSchema);
+            $relation = new ShadowBelongsTo('~morphed~' . $container, $role, $relationSchema);
             $this->dependencies[$relation->getName()] ??= $relation;
             return;
         }
-        // $schema = $relationSchema[Relation::SCHEMA];
-        // // $cascade = $schema[Relation::CASCADE];
-        // $outerKeys = (array)$schema[Relation::OUTER_KEY];
-        // $innerKeys = (array)$schema[Relation::INNER_KEY];
-        // foreach ($this->innerRelations as $relation) {
-        //
-        // }
-        $relation = new ShadowBelongsTo($role, $container, $relationSchema);
+
+        $relation = new ShadowBelongsTo($container, $role, $relationSchema);
         $this->dependencies[$relation->getName()] = $relation;
     }
 

@@ -4,15 +4,13 @@ declare(strict_types=1);
 
 namespace Cycle\ORM\Collection\Pivoted;
 
-use Exception;
 use IteratorAggregate;
 use SplObjectStorage;
-use Traversable;
 
 /**
  * Carry information about ordered list of entities and associated pivot context.
  */
-final class PivotedStorage implements IteratorAggregate, \Countable
+class PivotedStorage implements IteratorAggregate, \Countable
 {
     private array $elements;
 
@@ -75,6 +73,7 @@ final class PivotedStorage implements IteratorAggregate, \Countable
     {
         $this->context->offsetSet($entity, $pivot);
     }
+
     public function count(): int
     {
         return count($this->elements);

@@ -4,7 +4,7 @@
   "license": "MIT",
   "description": "PHP DataMapper ORM and Data Modelling Engine",
   "require": {
-    "php": "^7.4|^8.0",
+    "php": "^8.0",
     "ext-pdo": "*",
     "doctrine/inflector": "^1.4|^2.0",
     "doctrine/collections": "^1.5",

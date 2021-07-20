@@ -271,9 +271,7 @@ abstract class CyclicManyToManyTest extends BaseTest
         $tag->users->add($u);
         $u->tags->add($tag);
 
-        $t = new Transaction($this->orm);
-        $t->persist($tag);
-        $t->run();
+        $this->save($tag);
 
         $u2 = $this->orm->withHeap(new Heap())->get(User::class, ['id' => $u->id]);
 

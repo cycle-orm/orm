@@ -109,13 +109,8 @@ abstract class DatabaseMapper implements MapperInterface
         );
 
         foreach ($this->primaryKeys as $pk) {
-            if (isset($fromData[$pk])) {
-                // set update criteria right now
-                $update->register($pk, $fromData[$pk], false, ConsumerInterface::SCOPE);
-            } else {
-                // subscribe to PK update
-                $state->forward($pk, $update, $pk, true, ConsumerInterface::SCOPE);
-            }
+            // set update criteria right now
+            $update->register($pk, $fromData[$pk], ConsumerInterface::SCOPE);
         }
 
         return $update;
@@ -129,13 +124,8 @@ abstract class DatabaseMapper implements MapperInterface
         $delete->waitScope(...$this->primaryKeys);
         $fromData = $node->getInitialData();
         foreach ($this->primaryKeys as $pk) {
-            if (isset($fromData[$pk])) {
-                // set update criteria right now
-                $delete->register($pk, $fromData[$pk], false, ConsumerInterface::SCOPE);
-            } else {
-                // subscribe to PK update
-                $state->forward($pk, $delete, $pk, true, ConsumerInterface::SCOPE);
-            }
+            // set update criteria right now
+            $delete->register($pk, $fromData[$pk], ConsumerInterface::SCOPE);
         }
 
         return $delete;

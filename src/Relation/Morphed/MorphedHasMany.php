@@ -39,7 +39,7 @@ class MorphedHasMany extends HasMany
         $rNode = $rTuple->node;
         $node = $parentTuple->node;
         if (($rNode->getData()[$this->morphKey] ?? null) !== $node->getRole()) {
-            $rNode->register($this->morphKey, $node->getRole(), true);
+            $rNode->register($this->morphKey, $node->getRole());
         }
     }
 

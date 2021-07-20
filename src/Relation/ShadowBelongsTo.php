@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Cycle\ORM\Relation;
 
-use Cycle\ORM\Heap\Node;
 use Cycle\ORM\Heap\State;
 use Cycle\ORM\Relation;
 use Cycle\ORM\Transaction\Pool;
@@ -19,10 +18,10 @@ class ShadowBelongsTo implements ReversedRelationInterface, DependencyInterface
 
     private array $innerKeys;
     private bool $cascade;
-    public function __construct(string $role, string $target, array $schema)
+    public function __construct(string $name, string $target, array $schema)
     {
-        $this->name = $role . ':' . $target;
-        $this->target = $role;
+        $this->name = $target . '.' . $name . ':' . $schema[Relation::TARGET];
+        $this->target = $target;
         $this->schema = $schema;
         $this->innerKeys = (array)($schema[Relation::SCHEMA][Relation::OUTER_KEY] ?? []);
         $this->cascade = (bool)($schema[Relation::SCHEMA][Relation::CASCADE] ?? false);
@@ -33,8 +32,9 @@ class ShadowBelongsTo implements ReversedRelationInterface, DependencyInterface
         return $this->innerKeys;
     }
 
-    public function prepare(Pool $pool, Tuple $tuple, bool $load = true): void
+    public function prepare(Pool $pool, Tuple $tuple, $entityData, bool $load = true): void
     {
+        $tuple->state->setRelation($this->getName(), $entityData);
         $this->registerWaitingFields($tuple->state, !$this->isNullable());
         $tuple->node->setRelationStatus($this->getName(), RelationInterface::STATUS_PROCESS);
     }
@@ -68,24 +68,11 @@ class ShadowBelongsTo implements ReversedRelationInterface, DependencyInterface
         return $this->cascade;
     }
 
-    public function init(Node $node, array $data): void
-    {
-    }
-
-    public function extract($data)
-    {
-        return is_array($data) ? $data : [];
-    }
-
-    public function initPromise(Node $node): array
-    {
-        return [null, null];
-    }
-
     public function isNullable(): bool
     {
         return (bool)($this->schema[Relation::SCHEMA][Relation::NULLABLE] ?? false);
     }
+
     private function checkFieldsExists(State $state): bool
     {
         $data = $state->getData();

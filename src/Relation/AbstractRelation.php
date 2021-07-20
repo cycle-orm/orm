@@ -86,7 +86,7 @@ abstract class AbstractRelation implements ActiveRelationInterface
 
     protected function getTargetRelationName(): string
     {
-        return $this->role . ':' . $this->name;
+        return $this->role . '.' . $this->name . ':' . $this->target;
     }
 
     /**

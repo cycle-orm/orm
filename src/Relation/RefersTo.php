@@ -19,10 +19,12 @@ class RefersTo extends AbstractRelation implements DependencyInterface
 {
     use PromiseOneTrait;
 
-    public function prepare(Pool $pool, Tuple $tuple, bool $load = true): void
+    public function prepare(Pool $pool, Tuple $tuple, $entityData, bool $load = true): void
     {
         $node = $tuple->node;
-        $related = $tuple->state->getRelation($this->getName());
+        // $related = $tuple->state->getRelation($this->getName());
+        $related = $entityData;
+        $tuple->state->setRelation($this->getName(), $related);
         $original = $node->getRelation($this->getName());
 
         if ($related instanceof ReferenceInterface) {
@@ -37,7 +39,7 @@ class RefersTo extends AbstractRelation implements DependencyInterface
                 // Reset keys
                 $state = $node->getState();
                 foreach ($this->innerKeys as $innerKey) {
-                    $state->register($innerKey, null, true);
+                    $state->register($innerKey, null);
                 }
             }
 

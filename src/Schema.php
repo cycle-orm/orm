@@ -56,6 +56,8 @@ final class Schema implements SchemaInterface
                     if ($through !== $role) {
                         continue;
                     }
+                    $handshake = $item[Relation::SCHEMA][Relation::HANDSHAKE] ?? null;
+                    $target = $item[Relation::TARGET];
                     $result[$roleName][$relName] = [
                         Relation::TYPE => Relation::HAS_MANY,
                         Relation::TARGET => $role,
@@ -65,7 +67,7 @@ final class Schema implements SchemaInterface
                             Relation::OUTER_KEY => $item[Relation::SCHEMA][Relation::THROUGH_INNER_KEY],
                         ],
                     ];
-                    $result[$item[Relation::TARGET]]["$roleName:$relName"] = [
+                    $result[$target][$handshake ?? ($roleName . '.' . $relName . ':' . $target)] = [
                         Relation::TYPE => Relation::HAS_MANY,
                         Relation::TARGET => $role,
                         Relation::SCHEMA => [
@@ -79,6 +81,7 @@ final class Schema implements SchemaInterface
         }
         return $result;
     }
+
     /**
      * @return array [relation name => relation schema]
      */
@@ -129,7 +132,7 @@ final class Schema implements SchemaInterface
      *
      * @return array Pair of [schema, aliases]
      */
-    protected function normalize(array $schema): array
+    private function normalize(array $schema): array
     {
         $result = $aliases = [];
 
@@ -167,6 +170,8 @@ final class Schema implements SchemaInterface
             unset($item);
         }
 
+        $result = $this->linkRelations($result, $aliases);
+
         return [$result, $aliases];
     }
 
@@ -180,7 +185,141 @@ final class Schema implements SchemaInterface
 
             $rel[Relation::TARGET] = $target;
 
+            $nullable = $rel[Relation::SCHEMA][Relation::NULLABLE] ?? null;
+            // // Transform nullable BelongsTo to RefersTo
+            // if ($rel[Relation::TYPE] === Relation::BELONGS_TO && $nullable === true) {
+            //     $rel[Relation::TYPE] = Relation::REFERS_TO;
+            // }
+            // // Transform not nullable RefersTo to BelongsTo
+            // if ($rel[Relation::TYPE] === Relation::REFERS_TO && $nullable === false) {
+            //     $rel[Relation::TYPE] = Relation::BELONGS_TO;
+            // }
+
+            // Normalize THROUGH_ENTITY value
+            if ($rel[Relation::TYPE] === Relation::MANY_TO_MANY) {
+                $through = $rel[Relation::SCHEMA][Relation::THROUGH_ENTITY];
+                while (isset($aliases[$through])) {
+                    $through = $aliases[$through];
+                }
+                $rel[Relation::SCHEMA][Relation::THROUGH_ENTITY] = $through;
+            }
+
             yield $name => $rel;
         }
+    }
+
+    private function linkRelations(array $schemaArray, array $aliases): array
+    {
+        $result = $schemaArray;
+        foreach ($result as $role => $item) {
+            foreach ($item[self::RELATIONS] ?? [] as $container => $relation) {
+                $target = $relation[Relation::TARGET];
+                if (!array_key_exists($target, $result)) {
+                    continue;
+                }
+                $targetSchema = $result[$target];
+                $targetRelations = $targetSchema[self::RELATIONS];
+                $handshake = $relation[Relation::SCHEMA][Relation::HANDSHAKE] ?? null;
+                if ($handshake !== null) {
+                    if (!array_key_exists($handshake, $targetRelations)) {
+                        throw new SchemaException(
+                            sprintf(
+                                'Relation `%s` for handshake with `%s.%s` not found in the `%s` role.',
+                                $handshake,
+                                $role,
+                                $container,
+                                $target
+                            )
+                        );
+                    }
+                    $targetHandshake = $targetRelations[$handshake][Relation::SCHEMA][Relation::HANDSHAKE] ?? null;
+                    if ($targetHandshake !== null && $container !== $targetHandshake) {
+                        throw new SchemaException(
+                            sprintf(
+                                'Relation `%s.%s` links to `%s.%s` for handshake but `%s.%s` have different handshake value.',
+                                $role,
+                                $container,
+                                $target,
+                                $handshake,
+                                $target,
+                                $handshake,
+                            )
+                        );
+                    }
+                    // $targetSchema[self::RELATIONS][$handshake][Relation::SCHEMA][Relation::HANDSHAKE] = $container;
+                    $result[$target][self::RELATIONS][$handshake][Relation::SCHEMA][Relation::HANDSHAKE] = $container;
+                    continue;
+                }
+                // find relation for handshake
+                $handshake = $this->findRelationForHandshake($role, $container, $relation, $targetRelations);
+                if ($handshake === null) {
+                    continue;
+                }
+                $result[$role][self::RELATIONS][$container][Relation::SCHEMA][Relation::HANDSHAKE] = $handshake;
+                $result[$target][self::RELATIONS][$handshake][Relation::SCHEMA][Relation::HANDSHAKE] = $container;
+            }
+        }
+
+        return $result;
+    }
+
+    private function findRelationForHandshake(
+        string $role,
+        string $container,
+        array $relation,
+        array $targetRelations
+    ): ?string {
+        $nullable = $relation[Relation::SCHEMA][Relation::NULLABLE] ?? null;
+        /** @var callable $compareCallback */
+        $compareCallback = match($relation[Relation::TYPE]) {
+            Relation::MANY_TO_MANY => [$this, 'compareManyToMany'],
+            // Relation::HAS_ONE, Relation::HAS_MANY => $nullable === true ? Relation::REFERS_TO : Relation::BELONGS_TO,
+            default => null,
+        };
+        if ($compareCallback === null) {
+            return null;
+        }
+        foreach ($targetRelations as $targetContainer => $targetRelation) {
+            $targetSchema = $targetRelation[Relation::SCHEMA];
+            if ($role !== $targetRelation[Relation::TARGET]) {
+                continue;
+            }
+            if (isset($targetSchema[Relation::HANDSHAKE])) {
+                if ($targetSchema[Relation::HANDSHAKE] === $container) {
+                    // This target relation will be checked in the linkRelations() method
+                    return null;
+                }
+                continue;
+            }
+            if ($compareCallback($relation, $targetRelation)) {
+                return $targetContainer;
+            }
+        }
+        return null;
+    }
+
+    private function compareManyToMany(array $relation, array $targetRelation): bool
+    {
+        $schema = $relation[Relation::SCHEMA];
+        $targetSchema = $targetRelation[Relation::SCHEMA];
+        // MTM connects with MTM only
+        if ($targetRelation[Relation::TYPE] !== Relation::MANY_TO_MANY){
+            return false;
+        }
+        // Pivot entity should be same
+        if ($schema[Relation::THROUGH_ENTITY] !== $targetSchema[Relation::THROUGH_ENTITY]) {
+            return false;
+        }
+        // Same keys
+        if ((array)$schema[Relation::INNER_KEY] !== (array)$targetSchema[Relation::OUTER_KEY]
+            || (array)$schema[Relation::OUTER_KEY] !== (array)$targetSchema[Relation::INNER_KEY]) {
+            return false;
+        }
+        // Optional fields
+        if (($schema[Relation::WHERE] ?? []) !== ($targetSchema[Relation::WHERE] ?? [])
+            || ($schema[Relation::THROUGH_WHERE] ?? []) !== ($targetSchema[Relation::THROUGH_WHERE] ?? [])) {
+            return false;
+        }
+        return true;
     }
 }

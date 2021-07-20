@@ -71,58 +71,7 @@ abstract class BelongsToRelationTest extends BaseTest
         $this->makeFK('profile', 'user_id', 'user', 'id');
         $this->makeFK('nested', 'profile_id', 'profile', 'id');
 
-        $this->orm = $this->withSchema(new Schema([
-            User::class    => [
-                Schema::ROLE        => 'user',
-                Schema::MAPPER      => Mapper::class,
-                Schema::DATABASE    => 'default',
-                Schema::TABLE       => 'user',
-                Schema::PRIMARY_KEY => 'id',
-                Schema::COLUMNS     => ['id', 'email', 'balance'],
-                Schema::SCHEMA      => [],
-                Schema::RELATIONS   => []
-            ],
-            Profile::class => [
-                Schema::ROLE        => 'profile',
-                Schema::MAPPER      => Mapper::class,
-                Schema::DATABASE    => 'default',
-                Schema::TABLE       => 'profile',
-                Schema::PRIMARY_KEY => 'id',
-                Schema::COLUMNS     => ['id', 'user_id', 'image'],
-                Schema::SCHEMA      => [],
-                Schema::RELATIONS   => [
-                    'user' => [
-                        Relation::TYPE   => Relation::BELONGS_TO,
-                        Relation::TARGET => User::class,
-                        Relation::SCHEMA => [
-                            Relation::CASCADE   => true,
-                            Relation::INNER_KEY => 'user_id',
-                            Relation::OUTER_KEY => 'id',
-                        ],
-                    ]
-                ]
-            ],
-            Nested::class  => [
-                Schema::ROLE        => 'nested',
-                Schema::MAPPER      => Mapper::class,
-                Schema::DATABASE    => 'default',
-                Schema::TABLE       => 'nested',
-                Schema::PRIMARY_KEY => 'id',
-                Schema::COLUMNS     => ['id', 'profile_id', 'label'],
-                Schema::SCHEMA      => [],
-                Schema::RELATIONS   => [
-                    'profile' => [
-                        Relation::TYPE   => Relation::BELONGS_TO,
-                        Relation::TARGET => Profile::class,
-                        Relation::SCHEMA => [
-                            Relation::CASCADE   => true,
-                            Relation::INNER_KEY => 'profile_id',
-                            Relation::OUTER_KEY => 'id',
-                        ],
-                    ]
-                ]
-            ]
-        ]));
+        $this->orm = $this->withSchema(new Schema($this->getSchemaArray()));
     }
 
     public function testFetchRelation(): void
@@ -477,5 +426,76 @@ abstract class BelongsToRelationTest extends BaseTest
             ->fetchOne();
 
         $this->assertSame('nested-label', $n->label);
+    }
+
+    /**
+     * Nullable BelongsTo relation should be transformed to RefersTo
+     */
+    public function testSetNullable(): void
+    {
+        $schema = $this->getSchemaArray();
+        $schema[Profile::class][Schema::RELATIONS]['user'][Relation::SCHEMA][Relation::NULLABLE] = true;
+        $this->orm = $this->withSchema(new Schema($schema));
+
+        $this->assertInstanceOf(
+            Relation\RefersTo::class,
+            $this->orm->getRelationMap(Profile::class)->getRelations()['user']
+        );
+    }
+
+    private function getSchemaArray(): array
+    {
+        return [
+            User::class    => [
+                Schema::ROLE        => 'user',
+                Schema::MAPPER      => Mapper::class,
+                Schema::DATABASE    => 'default',
+                Schema::TABLE       => 'user',
+                Schema::PRIMARY_KEY => 'id',
+                Schema::COLUMNS     => ['id', 'email', 'balance'],
+                Schema::SCHEMA      => [],
+                Schema::RELATIONS   => []
+            ],
+            Profile::class => [
+                Schema::ROLE        => 'profile',
+                Schema::MAPPER      => Mapper::class,
+                Schema::DATABASE    => 'default',
+                Schema::TABLE       => 'profile',
+                Schema::PRIMARY_KEY => 'id',
+                Schema::COLUMNS     => ['id', 'user_id', 'image'],
+                Schema::SCHEMA      => [],
+                Schema::RELATIONS   => [
+                    'user' => [
+                        Relation::TYPE   => Relation::BELONGS_TO,
+                        Relation::TARGET => User::class,
+                        Relation::SCHEMA => [
+                            Relation::CASCADE   => true,
+                            Relation::INNER_KEY => 'user_id',
+                            Relation::OUTER_KEY => 'id',
+                        ],
+                    ]
+                ]
+            ],
+            Nested::class  => [
+                Schema::ROLE        => 'nested',
+                Schema::MAPPER      => Mapper::class,
+                Schema::DATABASE    => 'default',
+                Schema::TABLE       => 'nested',
+                Schema::PRIMARY_KEY => 'id',
+                Schema::COLUMNS     => ['id', 'profile_id', 'label'],
+                Schema::SCHEMA      => [],
+                Schema::RELATIONS   => [
+                    'profile' => [
+                        Relation::TYPE   => Relation::BELONGS_TO,
+                        Relation::TARGET => Profile::class,
+                        Relation::SCHEMA => [
+                            Relation::CASCADE   => true,
+                            Relation::INNER_KEY => 'profile_id',
+                            Relation::OUTER_KEY => 'id',
+                        ],
+                    ]
+                ]
+            ]
+        ];
     }
 }

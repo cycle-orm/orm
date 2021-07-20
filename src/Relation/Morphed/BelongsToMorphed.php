@@ -68,17 +68,16 @@ class BelongsToMorphed extends BelongsTo
         return $scope === [] ? new DeferredReference($target, []) :  new Reference($target, $scope);
     }
 
-    public function prepare(Pool $pool, Tuple $tuple, bool $load = true): void
+    public function prepare(Pool $pool, Tuple $tuple, $entityData, bool $load = true): void
     {
-        parent::prepare($pool, $tuple, $load);
+        parent::prepare($pool, $tuple, $entityData, $load);
         $related = $tuple->state->getRelation($this->getName());
 
         $tuple->node->register(
             $this->morphKey,
             $related === null
                 ? null
-                : $this->getNode($related)->getRole(),
-            true
+                : $this->getNode($related)->getRole()
         );
     }
 

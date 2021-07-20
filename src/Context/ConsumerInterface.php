@@ -16,19 +16,15 @@ interface ConsumerInterface
     public const SCOPE = 2;
 
     /**
-     * Accept the value forwarded by another object. The `handled` value will always be false when forwarded using
-     * initial trigger.
+     * Accept the value forwarded by another object.
      *
      * @param string $key    Key name to accept the value.
      * @param mixed  $value  The key value.
-     * @param bool   $fresh  Indicates that value has not been received by any other acceptor.
      * @param int    $stream One of the context types (data context, scope context).
-     * @see ProducerInterface
      */
     public function register(
         string $key,
-        $value,
-        bool $fresh = false,
+        mixed $value,
         #[ExpectedValues(valuesFromClass: self::class)]
         int $stream = self::DATA
     ): void;

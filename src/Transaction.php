@@ -12,6 +12,7 @@ use Cycle\ORM\Exception\TransactionException;
 use Cycle\ORM\Heap\Node;
 use Cycle\ORM\Reference\ReferenceInterface;
 use Cycle\ORM\Relation\RelationInterface;
+use Cycle\ORM\Relation\ReversedRelationInterface;
 use Cycle\ORM\Relation\ShadowBelongsTo;
 use Cycle\ORM\Transaction\Pool;
 use Cycle\ORM\Transaction\Runner;
@@ -271,8 +272,8 @@ final class Transaction implements TransactionInterface
                 if ($tuple->status === Tuple::STATUS_PREPARING) {
                     if ($relationStatus === RelationInterface::STATUS_PREPARE) {
                         $entityData ??= $tuple->mapper->fetchRelations($tuple->entity);
-                        $tuple->state->setRelation($name, $entityData[$name] ?? null);
-                        $relation->prepare($this->pool, $tuple);
+                        // $tuple->state->setRelation($name, $entityData[$name] ?? null);
+                        $relation->prepare($this->pool, $tuple, $entityData[$name] ?? null);
                         $relationStatus = $tuple->node->getRelationStatus($relation->getName());
                     }
                 } else {
@@ -326,10 +327,11 @@ final class Transaction implements TransactionInterface
             if ($relationStatus === RelationInterface::STATUS_PREPARE) {
                 // $relData ??= $tuple->mapper->extract($tuple->entity);
                 $relData ??= $tuple->mapper->fetchRelations($tuple->entity);
-                $tuple->state->setRelation($name, $relData[$name] ?? null);
+                // $tuple->state->setRelation($name, $relData[$name] ?? null);
                 $relation->prepare(
                     $this->pool,
                     $tuple,
+                    $relData[$name] ?? null,
                     $isWaitingKeys || $hasChangedKeys
                 );
                 $relationStatus = $tuple->node->getRelationStatus($relation->getName());
@@ -436,7 +438,7 @@ final class Transaction implements TransactionInterface
 
         if (!$isDependenciesResolved) {
             if ($tuple->status === Tuple::STATUS_PREPROCESSED) {
-                echo " \033[31m MASTER RELATIONS IS NOT RESOLVED : \033[0m \n";
+                echo " \033[31m MASTER RELATIONS IS NOT RESOLVED ({$tuple->node->getRole()}): \033[0m \n";
                 foreach ($map->getMasters() as $name => $relation) {
                     $relationStatus = $tuple->node->getRelationStatus($relation->getName());
                     if ($relationStatus !== RelationInterface::STATUS_RESOLVED) {

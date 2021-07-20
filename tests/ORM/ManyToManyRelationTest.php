@@ -244,8 +244,8 @@ abstract class ManyToManyRelationTest extends BaseTest
 
         $this->save($u);
 
-        $selector = new Select($this->orm->withHeap(new Heap()), User::class);
-        $u = $selector->load('tags')->wherePK(3)->fetchOne();
+        $u = (new Select($this->orm->withHeap(new Heap()), User::class))
+            ->load('tags')->wherePK(3)->fetchOne();
 
         $this->assertSame('many@email.com', $u->email);
         $this->assertCount(1, $u->tags);

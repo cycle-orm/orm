@@ -43,7 +43,7 @@ class TestContextCommand implements CommandInterface, ConsumerInterface
     {
     }
 
-    public function register(string $key, $value, bool $fresh = false, int $stream = self::DATA): void
+    public function register(string $key, mixed $value, int $stream = self::DATA): void
     {
     }
 

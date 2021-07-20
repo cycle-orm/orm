@@ -38,48 +38,7 @@ abstract class RefersToRelationTest extends BaseTest
             'user_id' => ['table' => 'user', 'column' => 'id']
         ]);
 
-        $this->orm = $this->withSchema(new Schema([
-            User::class    => [
-                Schema::ROLE        => 'user',
-                Schema::MAPPER      => Mapper::class,
-                Schema::DATABASE    => 'default',
-                Schema::TABLE       => 'user',
-                Schema::PRIMARY_KEY => 'id',
-                Schema::COLUMNS     => ['id', 'email', 'balance', 'comment_id'],
-                Schema::TYPECAST    => ['id' => 'int'],
-                Schema::RELATIONS   => [
-                    'lastComment' => [
-                        Relation::TYPE   => Relation::REFERS_TO,
-                        Relation::TARGET => Comment::class,
-                        Relation::SCHEMA => [
-                            Relation::CASCADE   => true,
-                            Relation::INNER_KEY => 'comment_id',
-                            Relation::OUTER_KEY => 'id'
-                        ],
-                    ],
-                    'comments'    => [
-                        Relation::TYPE   => Relation::HAS_MANY,
-                        Relation::TARGET => Comment::class,
-                        Relation::SCHEMA => [
-                            Relation::CASCADE   => true,
-                            Relation::INNER_KEY => 'id',
-                            Relation::OUTER_KEY => 'user_id',
-                        ],
-                    ],
-
-                ]
-            ],
-            Comment::class => [
-                Schema::ROLE        => 'comment',
-                Schema::MAPPER      => Mapper::class,
-                Schema::DATABASE    => 'default',
-                Schema::TABLE       => 'comment',
-                Schema::PRIMARY_KEY => 'id',
-                Schema::COLUMNS     => ['id', 'user_id', 'message'],
-                Schema::SCHEMA      => [],
-                Schema::RELATIONS   => []
-            ]
-        ]));
+        $this->orm = $this->withSchema(new Schema($this->getSchemaArray()));
     }
 
     public function testCreateUserWithDoubleReference(): void
@@ -263,5 +222,66 @@ abstract class RefersToRelationTest extends BaseTest
 
         $this->assertNull($u->lastComment);
         $this->assertCount(1, $u->comments);
+    }
+
+    /**
+     * Not nullable RefersTo relation should be transformed to BelongsTo
+     */
+    public function testSetNotNullable(): void
+    {
+        $schema = $this->getSchemaArray();
+        $schema[User::class][Schema::RELATIONS]['lastComment'][Relation::SCHEMA][Relation::NULLABLE] = false;
+        $this->orm = $this->withSchema(new Schema($schema));
+
+        $this->assertInstanceOf(
+            Relation\BelongsTo::class,
+            $this->orm->getRelationMap(User::class)->getRelations()['lastComment']
+        );
+    }
+
+    private function getSchemaArray(): array
+    {
+        return [
+            User::class    => [
+                Schema::ROLE        => 'user',
+                Schema::MAPPER      => Mapper::class,
+                Schema::DATABASE    => 'default',
+                Schema::TABLE       => 'user',
+                Schema::PRIMARY_KEY => 'id',
+                Schema::COLUMNS     => ['id', 'email', 'balance', 'comment_id'],
+                Schema::TYPECAST    => ['id' => 'int'],
+                Schema::RELATIONS   => [
+                    'lastComment' => [
+                        Relation::TYPE   => Relation::REFERS_TO,
+                        Relation::TARGET => Comment::class,
+                        Relation::SCHEMA => [
+                            Relation::CASCADE   => true,
+                            Relation::INNER_KEY => 'comment_id',
+                            Relation::OUTER_KEY => 'id'
+                        ],
+                    ],
+                    'comments'    => [
+                        Relation::TYPE   => Relation::HAS_MANY,
+                        Relation::TARGET => Comment::class,
+                        Relation::SCHEMA => [
+                            Relation::CASCADE   => true,
+                            Relation::INNER_KEY => 'id',
+                            Relation::OUTER_KEY => 'user_id',
+                        ],
+                    ],
+
+                ]
+            ],
+            Comment::class => [
+                Schema::ROLE        => 'comment',
+                Schema::MAPPER      => Mapper::class,
+                Schema::DATABASE    => 'default',
+                Schema::TABLE       => 'comment',
+                Schema::PRIMARY_KEY => 'id',
+                Schema::COLUMNS     => ['id', 'user_id', 'message'],
+                Schema::SCHEMA      => [],
+                Schema::RELATIONS   => []
+            ]
+        ];
     }
 }

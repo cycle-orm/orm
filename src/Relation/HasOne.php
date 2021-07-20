@@ -18,11 +18,13 @@ class HasOne extends AbstractRelation
 {
     use PromiseOneTrait;
 
-    public function prepare(Pool $pool, Tuple $tuple, bool $load = true): void
+    public function prepare(Pool $pool, Tuple $tuple, $entityData, bool $load = true): void
     {
         $node = $tuple->node;
         $original = $node->getRelation($this->getName());
-        $related = $tuple->state->getRelation($this->getName());
+        // $related = $tuple->state->getRelation($this->getName());
+        $related = $entityData;
+        $tuple->state->setRelation($this->getName(), $related);
 
         if ($original instanceof ReferenceInterface) {
             if (!$load && $this->compareReference($original, $related)) {
@@ -151,7 +153,7 @@ class HasOne extends AbstractRelation
 
         if ($this->isNullable()) {
             foreach ($this->outerKeys as $outerKey) {
-                $relatedNode->getState()->register($outerKey, null, true);
+                $relatedNode->getState()->register($outerKey, null);
             }
             return $pool->attachStore($child, false, $relatedNode, $relatedNode->getState());
         }
